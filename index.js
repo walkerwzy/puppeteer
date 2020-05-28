@@ -1,7 +1,8 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const firstpage = 'https://www.mingrenteahouse.com/shu/50437927/52863430.html';
-const filename = 'text.txt';
+// const firstpage = 'https://www.mingrenteahouse.com/shu/50437927/52863430.html';
+const firstpage = 'https://www.mingrenteahouse.com/shu/50437927/65214889.html';
+const filename = 'test.txt';
 const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36';
 
 (async () => {
@@ -46,7 +47,8 @@ async function gotoNextPage(page) {
     const url = await page.$eval('.url_next', u => u['href']);
     if(url.indexOf('50437927.html')>0) return Promise.resolve('EOF');
     // await page.click('.url_next');
-    // await page.waitForNavigation({waitUntil: 'networkidle0'}); // timeout, why?
+    // await page.waitForNavigation({waitUntil: 'networkidle2'}); // timeout, why?
+    // await page.waitFor(1000);
     await page.goto(url, {waitUntil: 'networkidle0'});
     await getArticle(page);
 }
