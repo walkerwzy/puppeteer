@@ -12,6 +12,15 @@ const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (
         await handler.close();
         const browser = await puppeteer.launch({headless: true});
         const page = await browser.newPage();
+
+        // Optimisation
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+            const rstype = req.resourceType();
+            if (rstype in ['font', 'image', 'media', 'stylesheet']) req.abort();
+            else req.continue();
+        });
+
         await page.setUserAgent(ua);
         await page.goto(firstpage, {waitUntil: 'networkidle0'});
         await getArticle(page);
