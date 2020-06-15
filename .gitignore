@@ -104,6 +104,6 @@ dist
 .tern-port
 
 test.txt
-.DS_Store
+.DS_Store/
 .DS_Store
 temp/

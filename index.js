@@ -5,12 +5,12 @@ const path = require('path');
 const EventEmitter = require('events');
 const { promisify } = require('util');
 const pipeline = promisify(require('stream').pipeline);
-const url = require('url')
+const url = require('url');
 const pageurl = 'https://www.luoow.com/';
 const page_start = 1;
 const page_end = 3;
 const tmp_dir = 'temp/';
-const filename = 'test.txt';
+// const filename = 'test.txt';
 const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36';
 
 const event = new EventEmitter();
@@ -25,16 +25,26 @@ let vol = `vol.${page_start}`;
         await fs.emptyDir(tmp_dir);
 
         const browser = await puppeteer.launch({headless: true});
-        for(let i = page_start; i <= page_end; i++) {
-            vol = `vol.${i}`;
-            await goto_page(browser, i);
-        }
+        // for(let i = page_start; i <= page_end; i++) {
+        //     vol = `vol.${i}`;
+        //     await goto_page(browser, i);
+        // }
+        let pageindex = page_start;
+        await goto_page(browser, pageindex++);
+
+        event.on('finish', async () => {
+            if(pageindex > page_end) {
+                console.log(vol, 'done!=====================');
+                return Promise.resolve();
+            }
+            await goto_page(browser, pageindex++);
+        });
     } catch (error) {
         console.error("error propagation", error);
     }
 })();
 
-// const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
+const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
 const goto_page = async (browser, pageindex) => {
     const page = await browser.newPage();
@@ -53,14 +63,21 @@ const goto_page = async (browser, pageindex) => {
             // console.log(await res.text()); 
             const data = await res.json();
             event.once('vol', async v => {
-                await Promise.all(
-                    data.map(async d => {
-                        const mp3_url = await get_detail(d.song_id);
-                        const dest_path = `${tmp_dir}/${vol}`;
-                        await fs.emptyDir(dest_path);  // empty/create dir
-                        await download(mp3_url, d.name, dest_path);   
-                }));
+                // praparing saving directory
+                const dest_path = `${tmp_dir}/${vol}`;
+                await fs.emptyDir(dest_path);
+                for (const d of data) {
+                    const mp3_url = await get_detail(d.song_id);
+                    await download(mp3_url, d.name, dest_path); 
+                };
+                // 密集并行请求容易被服务器ban
+                // await Promise.all(
+                //     data.map(async d => {
+                //         const mp3_url = await get_detail(d.song_id);
+                //         if(mp3_url) await download(mp3_url, d.name, dest_path); 
+                // }));
                 await page.close();
+                event.emit('finish');
             });
         }
     });
@@ -71,7 +88,6 @@ const goto_page = async (browser, pageindex) => {
     await page.goto(href, {waitUntil: 'networkidle2'});
     vol = await page.$eval('div.title', t => t.textContent); // 默认值: vol.xxx, 先到为准
     event.emit('vol', vol);
-    console.log(`fetched 《${vol}》 ${href}`);
 
     // await page.close();
 
@@ -80,35 +96,43 @@ const goto_page = async (browser, pageindex) => {
 
 // private method
 
-const get_detail = async (id) => {
+/*
+ * get file remote detail
+ * @id int the id of the file
+ * @count retry count
+*/
+const get_detail = async (id, count) => {
+    count = count || 0;
     const detail_url = url.resolve(pageurl, `/ajax?m=163music_item&c2=${id}`);
     try {
         console.log("fetching", detail_url);
         const response = await fetch(detail_url);
-        if (!response.ok) console.error(`unexpected response with ${detail_url}: ${response.statusText}`);
-        try {
-            return await(await response.json()).url;
-        } catch (error) {
-            const body = await response.body;
-            console.error('parse json error', error, body);
-        }
+        if (!response.ok) throw new Error(`unexpected response with ${detail_url}: ${response.statusText}`);
+        return await(await response.json()).url;
     } catch (error) {
-        console.error(error);
+        // 最后一次才记录抓取失败
+        if(count++ == 10) console.error(`fetch detail retry count (${count})\n`, error);
+        // 最多重试10次，最长间隔15秒。
+        if(count < 10) {
+            await sleep(count * 1500);
+            return await get_detail(id, count);
+        } else return Promise.resolve();
     }
 }
 
 const download = async (file_url, song_name, dest) => {
     if(!file_url) {
-        console.info("****empty meta:", song_name);
-        return Promise.resolve('empty');
+        console.error("missing file meta:", vol, song_name);
+        return Promise.resolve();
     }
-    dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
+    const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
     try {
         const response = await fetch(file_url);
-        if (!response.ok) cosole.error(`unexpected response with ${file_url}: ${response.statusText}`);
-        console.log(`writting file to ${dest}`);
-        await pipeline(response.body, fs.createWriteStream(dest));   
+        if (!response.ok) throw new Error(`unexpected response with ${file_url}: ${response.statusText}`);
+        console.log(`writting file to ${file_dest}`);
+        await pipeline(response.body, fs.createWriteStream(file_dest));   
     } catch (error) {
         console.error(error);
+        return Promise.resolve();
     }
 }
