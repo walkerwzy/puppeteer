@@ -146,7 +146,9 @@ const download = async (file_url, song_name, dest) => {
         const response = await fetch(file_url);
         if (!response.ok) throw new Error(`unexpected response with ${file_url}: ${response.statusText}`);
         console.log(`writting file to ${file_dest}`);
-        await pipeline(response.body, fs.createWriteStream(file_dest)); 
+        // await pipeline(response.body, fs.createWriteStream(file_dest)); 
+        const ab = await response.arrayBuffer();
+        await fs.writeFile(file_dest.toString(), Buffer.from(ab));
         console.log(`《${song_name}》 saved successfully.`)
     } catch (error) {
         console.error(error);
