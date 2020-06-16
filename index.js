@@ -23,15 +23,13 @@ const event = new EventEmitter();
         await fs.writeFile(log_filename, 'vol\tname\n');
         await fs.emptyDir(tmp_dir);
 
-        const browser = await puppeteer.launch({headless: true});
         let pageindex = page_start;
-        await goto_page(browser, pageindex++);
+        await goto_page(pageindex++);
 
         event.on('finish', async () => {
             console.log(`=================${vol} done!=================\n`);
             if(pageindex > page_end) {
                 console.log(`=================【All done!】=================`);
-                browser.close();
                 return Promise.resolve();
             }
             await goto_page(browser, pageindex++);
@@ -43,7 +41,8 @@ const event = new EventEmitter();
 
 const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
-const goto_page = async (browser, pageindex) => {
+const goto_page = async (pageindex) => {
+    const browser = await puppeteer.launch({headless: true});
     const page = await browser.newPage();
     
     // Optimisation
@@ -74,6 +73,7 @@ const goto_page = async (browser, pageindex) => {
                 //         if(mp3_url) await download(mp3_url, d.name, dest_path); 
                 // }));
                 await page.close();
+                await browser.close();
                 event.emit('finish');
             });
         }
