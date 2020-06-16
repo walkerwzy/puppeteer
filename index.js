@@ -99,7 +99,8 @@ const goto_page = async (browser, pageindex) => {
     let href = url.resolve(pageurl, `${pageindex}`);
     await page.goto(href, {waitUntil: 'networkidle2'});
     vol = await page.$eval('div.title', t => t.textContent);
-    vol = vol.replace(/[<>:"/\|?*.]/g, '');
+    vol = vol.replace(/[<>:"/\|?*]/g, '');
+    vol = vol.replace(/\.$/,''); // 最后一个字符是.时， windows下打不开
     event.emit('vol_title');
     await page.close();
 }
