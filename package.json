@@ -4,7 +4,7 @@
   "description": "walker's test",
   "main": "index.js",
   "scripts": {
-    "luoo": "node index.js",
+    "luoo": "node index.js 2 4",
     "xs": "node xiaoshuo.js"
   },
   "keywords": [

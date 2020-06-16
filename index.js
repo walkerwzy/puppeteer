@@ -7,14 +7,16 @@ const { promisify } = require('util');
 const pipeline = promisify(require('stream').pipeline);
 const url = require('url');
 const pageurl = 'https://www.luoow.com/';
-const page_start = 1;
-const page_end = 3;
 const tmp_dir = 'temp/';
 const log_filename = 'test.txt';
 const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36';
 
-const event = new EventEmitter();
+const args = process.argv.slice(2);
+const page_start = parseInt(args[0], 10) || 1;
+const page_end = parseInt(args[1], 10) || page_start + 5;
 let vol = `vol.${page_start}`;
+
+const event = new EventEmitter();
 
 (async () => {
     try {
