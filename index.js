@@ -69,6 +69,9 @@ const goto_page = async (browser, pageindex) => {
         // preparing saving directory
         const dest_path = `${tmp_dir}/${vol}`;
         await fs.emptyDir(dest_path);
+        // if data is empty by unknown reason, try again
+        // TODO: dead loop?
+        if(!data) return await goto_page(browser, pageindex);
         // request by sequence
         for (const d of data) {
             const mp3_url = await get_detail(d.song_id);
@@ -97,6 +100,7 @@ const goto_page = async (browser, pageindex) => {
     await page.setUserAgent(ua);
 
     let href = url.resolve(pageurl, `${pageindex}`);
+    console.log(`requesting ${href}`);
     await page.goto(href, {waitUntil: 'networkidle2'});
     vol = await page.$eval('div.title', t => t.textContent);
     vol = vol.replace(/[<>:"/\|?*]/g, '');
@@ -143,7 +147,7 @@ const download = async (file_url, song_name, dest) => {
         if (!response.ok) throw new Error(`unexpected response with ${file_url}: ${response.statusText}`);
         console.log(`writting file to ${file_dest}`);
         await pipeline(response.body, fs.createWriteStream(file_dest)); 
-        console.log(`${song_name} saved successfully.`)
+        console.log(`《${song_name}》 saved successfully.`)
     } catch (error) {
         console.error(error);
         return Promise.resolve();
