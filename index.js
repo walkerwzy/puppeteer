@@ -34,7 +34,6 @@ const event = new EventEmitter();
 const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
 const goto_page = async (browser, pageindex) => {
-    console.log(`===========page ${pageindex}==========`)
     const page = await browser.newPage();
     let data = [];
     
