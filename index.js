@@ -32,7 +32,7 @@ const event = new EventEmitter();
                 console.log(`=================【All done!】=================`);
                 return Promise.resolve();
             }
-            await goto_page(browser, pageindex++);
+            await goto_page(pageindex++);
         });
     } catch (error) {
         console.error("error propagation", error);
