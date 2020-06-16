@@ -13,7 +13,7 @@ const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (
 const args = process.argv.slice(2);
 const page_start = parseInt(args[0], 10) || 1;
 const page_end = Math.max(parseInt(args[1], 10) || page_start + 2, page_start+2);
-const log_filename = `missing_${page_start}_${page_end}`;
+const log_filename = `missing_${page_start}_${page_end}.txt`;
 let vol = `vol.${page_start}`;
 
 const event = new EventEmitter();
