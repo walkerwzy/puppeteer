@@ -8,12 +8,12 @@ const pipeline = promisify(require('stream').pipeline);
 const url = require('url');
 const pageurl = 'https://www.luoow.com/';
 const tmp_dir = 'temp/';
-const log_filename = 'test.txt';
 const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36';
 
 const args = process.argv.slice(2);
 const page_start = parseInt(args[0], 10) || 1;
-const page_end = parseInt(args[1], 10) || page_start + 5;
+const page_end = Math.max(parseInt(args[1], 10) || page_start + 3, page_start+3);
+const log_filename = `missing_${page_start}_${page_end}`;
 let vol = `vol.${page_start}`;
 
 const event = new EventEmitter();
