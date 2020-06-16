@@ -23,17 +23,9 @@ const event = new EventEmitter();
         await fs.writeFile(log_filename, 'vol\tname\n');
         await fs.emptyDir(tmp_dir);
 
-        let pageindex = page_start;
-        await goto_page(pageindex++);
+        const browser = await puppeteer.launch({headless: true});
+        await goto_page(browser, page_start);
 
-        event.on('finish', async () => {
-            console.log(`=================${vol} done!=================\n`);
-            if(pageindex > page_end) {
-                console.log(`=================【All done!】=================`);
-                return Promise.resolve();
-            }
-            await goto_page(pageindex++);
-        });
     } catch (error) {
         console.error("error propagation", error);
     }
@@ -41,9 +33,10 @@ const event = new EventEmitter();
 
 const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
-const goto_page = async (pageindex) => {
-    const browser = await puppeteer.launch({headless: true});
+const goto_page = async (browser, pageindex) => {
+    console.log(`===========page ${pageindex}==========`)
     const page = await browser.newPage();
+    let data = [];
     
     // Optimisation
     await page.setRequestInterception(true);
@@ -57,34 +50,58 @@ const goto_page = async (pageindex) => {
         if(url_obj.pathname == '/ajax' && /m=163music&c2/.test(url_obj.search)) {
             console.log("parse", url_obj.path);
             // console.log(await res.text()); 
-            const data = await res.json();
-            event.once('vol', async v => {
-                // praparing saving directory
-                const dest_path = `${tmp_dir}/${vol}`;
-                await fs.emptyDir(dest_path);
-                for (const d of data) {
-                    const mp3_url = await get_detail(d.song_id);
-                    await download(mp3_url, d.name, dest_path); 
-                };
-                // 密集并行请求容易被服务器ban
-                // await Promise.all(
-                //     data.map(async d => {
-                //         const mp3_url = await get_detail(d.song_id);
-                //         if(mp3_url) await download(mp3_url, d.name, dest_path); 
-                // }));
-                await page.close();
-                await browser.close();
-                event.emit('finish');
-            });
+            data = await res.json();
+            event.emit('vol_data');
         }
     });
+
+    // 专辑数据来自xhr, 专辑标题来自页面, 两者加载完成顺序未知
+    // 接收两个消息, 一旦两个条件满足则处理数据
+    event.once('vol_title', async () => {
+        if(!data) return Promise.resolve();
+        await process_data();
+    });
+    event.once('vol_data', async () => {
+        if(/^vol\.\d+$/ig.test(vol)) return Promise.resolve();
+        await process_data();
+    });
+
+    const process_data = async () => {
+        // preparing saving directory
+        const dest_path = `${tmp_dir}/${vol}`;
+        await fs.emptyDir(dest_path);
+        // request by sequence
+        for (const d of data) {
+            const mp3_url = await get_detail(d.song_id);
+            await download(mp3_url, d.name, dest_path); 
+        };
+        console.log(`=================${vol} done!=================\n`);
+        await go_next_page();
+        // parallel request my be ban by server
+        // await Promise.all(
+        //     data.map(async d => {
+        //         const mp3_url = await get_detail(d.song_id);
+        //         if(mp3_url) await download(mp3_url, d.name, dest_path); 
+        // }));
+        // event.emit('finish');
+    }
+
+    const go_next_page = async () => {
+        if(++pageindex > page_end) {
+            console.log(`=================【All done!】=================`);
+            return await page.close();
+        }
+        vol = `vol.${pageindex}`;
+        await goto_page(browser, pageindex);
+    }
 
     await page.setUserAgent(ua);
 
     let href = url.resolve(pageurl, `${pageindex}`);
     await page.goto(href, {waitUntil: 'networkidle2'});
-    vol = await page.$eval('div.title', t => t.textContent); // 默认值: vol.xxx, 先到为准
-    event.emit('vol', vol);
+    vol = await page.$eval('div.title', t => t.textContent);
+    event.emit('vol_title');
+    
 
     // await page.close();
 
