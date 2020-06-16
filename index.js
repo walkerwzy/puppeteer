@@ -10,7 +10,7 @@ const pageurl = 'https://www.luoow.com/';
 const page_start = 1;
 const page_end = 3;
 const tmp_dir = 'temp/';
-// const filename = 'test.txt';
+const log_filename = 'test.txt';
 const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36';
 
 const event = new EventEmitter();
@@ -18,10 +18,7 @@ let vol = `vol.${page_start}`;
 
 (async () => {
     try {
-        // const handler = await fs.promises.open(filename, 'w');
-        // await handler.writeFile('逍遥战神\n\n');
-        // await handler.close();
-
+        await fs.writeFile(log_filename, 'vol\tname\n');
         await fs.emptyDir(tmp_dir);
 
         const browser = await puppeteer.launch({headless: true});
@@ -34,7 +31,7 @@ let vol = `vol.${page_start}`;
 
         event.on('finish', async () => {
             if(pageindex > page_end) {
-                console.log(vol, 'done!=====================');
+                console.log(`=================${vol} done!=================`);
                 return Promise.resolve();
             }
             await goto_page(browser, pageindex++);
@@ -123,7 +120,7 @@ const get_detail = async (id, count) => {
 const download = async (file_url, song_name, dest) => {
     if(!file_url) {
         console.error("missing file meta:", vol, song_name);
-        return Promise.resolve();
+        await fs.appendFile(log_filename, `${vol}\t${song_name}\n`); // fs-extra使用了graceful-fs避免 EMFILE error
     }
     const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
     try {
