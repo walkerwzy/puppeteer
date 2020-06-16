@@ -101,10 +101,7 @@ const goto_page = async (browser, pageindex) => {
     vol = await page.$eval('div.title', t => t.textContent);
     vol = vol.replace(/[<>:"/\|?*.]/g, '');
     event.emit('vol_title');
-    
-
-    // await page.close();
-
+    await page.close();
 }
 
 
