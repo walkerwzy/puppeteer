@@ -24,10 +24,6 @@ const event = new EventEmitter();
         await fs.emptyDir(tmp_dir);
 
         const browser = await puppeteer.launch({headless: true});
-        // for(let i = page_start; i <= page_end; i++) {
-        //     vol = `vol.${i}`;
-        //     await goto_page(browser, i);
-        // }
         let pageindex = page_start;
         await goto_page(browser, pageindex++);
 
@@ -35,6 +31,7 @@ const event = new EventEmitter();
             console.log(`=================${vol} done!=================\n`);
             if(pageindex > page_end) {
                 console.log(`=================【All done!】=================`);
+                browser.close();
                 return Promise.resolve();
             }
             await goto_page(browser, pageindex++);
@@ -48,7 +45,7 @@ const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
 const goto_page = async (browser, pageindex) => {
     const page = await browser.newPage();
-
+    
     // Optimisation
     await page.setRequestInterception(true);
     page.on('request', (req) => {
