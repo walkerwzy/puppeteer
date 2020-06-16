@@ -102,7 +102,6 @@ const goto_page = async (browser, pageindex) => {
     vol = vol.replace(/[<>:"/\|?*]/g, '');
     vol = vol.replace(/\.$/,''); // 最后一个字符是.时， windows下打不开
     event.emit('vol_title');
-    await page.close();
 }
 
 
