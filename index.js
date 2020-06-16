@@ -32,8 +32,9 @@ const event = new EventEmitter();
         await goto_page(browser, pageindex++);
 
         event.on('finish', async () => {
+            console.log(`=================${vol} done!=================\n`);
             if(pageindex > page_end) {
-                console.log(`=================${vol} done!=================`);
+                console.log(`=================【All done!】=================`);
                 return Promise.resolve();
             }
             await goto_page(browser, pageindex++);
