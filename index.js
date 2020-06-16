@@ -99,6 +99,7 @@ const goto_page = async (browser, pageindex) => {
     let href = url.resolve(pageurl, `${pageindex}`);
     await page.goto(href, {waitUntil: 'networkidle2'});
     vol = await page.$eval('div.title', t => t.textContent);
+    vol = vol.replace(/[<>:"/\|?*.]/g, '');
     event.emit('vol_title');
     
 
@@ -138,7 +139,7 @@ const download = async (file_url, song_name, dest) => {
         console.error("missing file meta:", vol, song_name);
         return await fs.appendFile(log_filename, `${vol}\t${song_name}\n`); // fs-extra使用了graceful-fs避免 EMFILE error
     }
-    song_name = song_name.replace(/[<>:"/\|?*]/g, ''); // remove invalid characters on windows
+    song_name = song_name.replace(/[<>:"/\|?*.]/g, ''); // remove invalid characters on windows
     const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
     try {
         const response = await fetch(file_url);
