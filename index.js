@@ -122,7 +122,7 @@ const download = async (file_url, song_name, dest) => {
         console.error("missing file meta:", vol, song_name);
         await fs.appendFile(log_filename, `${vol}\t${song_name}\n`); // fs-extra使用了graceful-fs避免 EMFILE error
     }
-    const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
+    const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`).replace(/[<>:"/\|?*]/g, '');
     try {
         const response = await fetch(file_url);
         if (!response.ok) throw new Error(`unexpected response with ${file_url}: ${response.statusText}`);
