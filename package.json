@@ -12,7 +12,7 @@
   ],
   "devDependencies": {
     "fs-extra": "^9.0.1",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^3.1.1",
     "puppeteer": "^4.0.0"
   },
   "author": "walker",
