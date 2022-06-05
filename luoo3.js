@@ -50,7 +50,7 @@ const goto_page = async (browser, pageindex) => {
         else req.continue();
     });
     page.on('response', async (res) => {
-        console.log(`interception url: ${res.url()}`);
+        // console.log(`interception url: ${res.url()}`);
         // const url_obj = url.parse(res.url());
         // if(url_obj.pathname == '/ajax' && /m=163music&c2/.test(url_obj.search)) {
         //     console.log("parse", url_obj.path);
@@ -116,13 +116,15 @@ const goto_page = async (browser, pageindex) => {
         const song_name = name.replace(/[<>:"/\|?*.]/g, ''); // remove invalid characters on windows
         const file_dest = path.resolve(dest_path, `${song_name}.mp3`);
         console.log(`fetching ${vol}: ${name} by ${author}`)
-        debugger;
-        await page.waitForResponse(async res => {
+        const re = /wxwenku.*mp3$/ig;
+        const res = await page.waitForResponse(res => re.test(res.url()));
+        // await page.waitForResponse(async res => {
             console.log(`res.url: ${res.url()}`);
             // if (!res.ok()) throw new Error(`unexpected response with ${mp3_url}: ${res.statusText()}`);
             if(!res.ok()) {
                 await fs.appendFile(log_filename, `${vol}\t${song_name}\n`); 
-                return Promise.resolve(true);
+                // return Promise.resolve(true);
+                continue;
             }
             debugger;
             await pipeline(res.buffer(), fs.createWriteStream(file_dest)); 
@@ -130,13 +132,15 @@ const goto_page = async (browser, pageindex) => {
             if(file_stat.size < 1000 && retry < 3) {
                 i--;
                 retry++;
+                page.waitForTimeout(3 * 1000);
                 console.log(`${name} retry: ${retry+1}`)
             } else {
                 retry = 0;
                 console.log(`《${song_name}》 saved successfully to ${file_dest}`);
             }
-            return Promise.resolve(true);
-        });
+        //     return Promise.resolve(true);
+        // });
+        await page.waitForTimeout(1000);
     }
 
     await page.close(); // no more webpage use
