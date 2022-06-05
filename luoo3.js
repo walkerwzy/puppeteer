@@ -37,6 +37,8 @@ const sleep = ms => new Promise( resolve => setTimeout(resolve, ms));
 
 const goto_page = async (browser, pageindex) => {
     const page = await browser.newPage();
+    page.setDefaultTimeout(0);
+    page.setCacheEnabled(false);
     let data = [];
     
     // Optimisation
@@ -48,6 +50,7 @@ const goto_page = async (browser, pageindex) => {
         else req.continue();
     });
     page.on('response', async (res) => {
+        console.log(`interception url: ${res.url()}`);
         // const url_obj = url.parse(res.url());
         // if(url_obj.pathname == '/ajax' && /m=163music&c2/.test(url_obj.search)) {
         //     console.log("parse", url_obj.path);
@@ -72,6 +75,7 @@ const goto_page = async (browser, pageindex) => {
     const go_next_page = async () => {
         if(++pageindex > page_end) {
             console.log(`=================【All done!】=================`);
+            browser.close();
             return Promise.resolve();
         }
         vol = `vol.${pageindex}`;
@@ -100,21 +104,39 @@ const goto_page = async (browser, pageindex) => {
     // process
     const dest_path = `${tmp_dir}/${vol}`;
     await fs.emptyDir(dest_path);
-    for (var i = song_names.length - 1; i >= 0; i--) {
-    	let name = song_names[i].replace(/\s+/g, '_');
-    	let author = song_authors[i].replace(/\s+/g, '_');
-    	let mp3_url = url.resolve(media_host, `${page_start}/${name}_${author}.mp3`);
-    	await download2(mp3_url, name, dest_path); 
-    	
-    	// let song_name = name.replace(/[<>:"/\|?*.]/g, '');
-    	// let dest = path.resolve(dest_path, `${song_name}.mp3`)
-    	// let body = await page.evaluate(download2, mp3_url);
-    	// console.log(`writting file to ${dest}`);
-    	// console.log('content:', body);
-     //    await pipeline(body, fs.createWriteStream(dest)); 
-        // const ab = await response.arrayBuffer();
-        // await fs.writeFile(file_dest.toString(), Buffer.from(ab));
-        // console.log(`《${song_name}》 saved successfully.`)	
+    const list = await page.$$("#skPlayer ul.skPlayer-list li");
+    
+    let retry = 0;
+    for (var i = 0; i < 3; i++) {
+    // for (var i = 0; i < list.length; i++) { 
+        await list[i].click();
+
+        const name = song_names[i];
+        const author = song_authors[i];
+        const song_name = name.replace(/[<>:"/\|?*.]/g, ''); // remove invalid characters on windows
+        const file_dest = path.resolve(dest_path, `${song_name}.mp3`);
+        console.log(`fetching ${vol}: ${name} by ${author}`)
+        debugger;
+        await page.waitForResponse(async res => {
+            console.log(`res.url: ${res.url()}`);
+            // if (!res.ok()) throw new Error(`unexpected response with ${mp3_url}: ${res.statusText()}`);
+            if(!res.ok()) {
+                await fs.appendFile(log_filename, `${vol}\t${song_name}\n`); 
+                return Promise.resolve(true);
+            }
+            debugger;
+            await pipeline(res.buffer(), fs.createWriteStream(file_dest)); 
+            const file_stat = await fs.stat(file_dest);
+            if(file_stat.size < 1000 && retry < 3) {
+                i--;
+                retry++;
+                console.log(`${name} retry: ${retry+1}`)
+            } else {
+                retry = 0;
+                console.log(`《${song_name}》 saved successfully to ${file_dest}`);
+            }
+            return Promise.resolve(true);
+        });
     }
 
     await page.close(); // no more webpage use
@@ -124,6 +146,18 @@ const goto_page = async (browser, pageindex) => {
 
 
 // private method
+const log = async (obj) => {
+    try {
+        await fs.writeFile('response.txt', obj);
+        await fs.emptyDir(tmp_dir);
+
+        const browser = await puppeteer.launch({headless: true});
+        await goto_page(browser, page_start);
+
+    } catch (error) {
+        console.error("log to file error:", error);
+    }
+}
 
 const download2 = async (file_url, song_name, dest) => {
     try {
