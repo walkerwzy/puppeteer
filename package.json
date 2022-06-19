@@ -8,12 +8,13 @@
     "xs": "node xiaoshuo.js"
   },
   "keywords": [
-    "test"
+    "test",
+    "puppeteer:^14.2.1"
   ],
   "devDependencies": {
     "fs-extra": "^9.0.1",
     "node-fetch": "^3.2.5", 
-    "puppeteer": "^14.2.1"
+    "puppeteer-stream": "^2.1.0"
   },
   "author": "walker",
   "license": "ISC"

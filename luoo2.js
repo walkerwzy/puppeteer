@@ -132,11 +132,11 @@ const download2 = async (file_url, song_name, dest) => {
 	    const file_dest = path.resolve(dest, `${song_name}${path.extname(file_url)}`);
         const response = await fetch(file_url, {
         	method: 'GET',
-   //      	headers: {
-   //      		'Access-Control-Allow-Origin':'*'
-			// },
-			referrer: 'https://www.luoow.com/',
-			referrerPolicy: 'unsafe-url', //'strict-origin-when-cross-origin',
+        	headers: {
+        		'User-Agent':ua
+			},
+			referer: 'https://www.luoow.com/',
+			refererPolicy: 'unsafe-url', //'strict-origin-when-cross-origin',
 			mode: 'cors'
         });
         if (!response.ok) throw new Error(`unexpected response with ${file_url}: ${response.statusText}`);
